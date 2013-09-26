@@ -1,0 +1,1 @@
+cmd_/home/b4me/modules/beaglebone/dulldev/dulldev.ko := arm-linux-gnueabi-ld -EL -r  -T /home/b4me/kernel/kernel/scripts/module-common.lds --build-id  -o /home/b4me/modules/beaglebone/dulldev/dulldev.ko /home/b4me/modules/beaglebone/dulldev/dulldev.o /home/b4me/modules/beaglebone/dulldev/dulldev.mod.o
