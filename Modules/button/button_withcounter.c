@@ -196,6 +196,6 @@ static void __exit cleanup_button(void)
 module_init(init_button);
 module_exit(cleanup_button);
  
-MODULE_AUTHOR("Sanchayan");
+MODULE_AUTHOR("Birkir Oskarsson & Bjorn Smith");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Beagleboard-xM GPIO Driver");
+MODULE_DESCRIPTION("Beaglebone Black gpio1_28 irq driver");
