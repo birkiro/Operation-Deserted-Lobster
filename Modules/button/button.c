@@ -167,7 +167,7 @@ static int __init init_button(void)
 	}
 	else
 	{
-	    printk( KERN_ALERT "button: Major number is: %d\n",init_result );
+	    printk( KERN_ALERT "button: Initialized at P9_12 (gpio1_28). Major number is: %d\n",init_result );
 	    //return 0;
 	}
 	 
