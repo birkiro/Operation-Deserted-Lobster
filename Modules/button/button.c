@@ -12,24 +12,58 @@
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/interrupt.h>
+#include <linux/time.h>
  
 #define GPIO_NUMBER    60     	// 60 = gpio1_28 (1 * 32 + 28 = 60)
- 
+#define DEBOUNCE_DELAY 500
+
 static dev_t first;     	// Global variable for the first device number
 static struct cdev c_dev;	// Global variable for the character device structure
 static struct class *cl;	// Global variable for the device class
  
 static int init_result;
 static int button_irq = 0;
+static int button_count = 0; // irq count
+
+unsigned int last_interrupt_time = 0;
+static uint64_t epochMilli;
+//short int irq_any_gpio    = 0;
+
+
+// Timer for interrupt debounce
+unsigned int millis (void)
+{
+  struct timeval tv ;
+  uint64_t now ;
+
+  do_gettimeofday(&tv);
+  now  = (uint64_t)tv.tv_sec * (uint64_t)1000 + (uint64_t)(tv.tv_usec / 1000) ;
+
+  return (uint32_t)(now - epochMilli) ;
+}
 
 static irqreturn_t button_handler(int irq, void *dev_id)
 {
-	printk(KERN_INFO "button: I got an interrupt.\n");
-	return IRQ_HANDLED;
+   unsigned int interrupt_time = millis();
+
+   if (interrupt_time - last_interrupt_time < DEBOUNCE_DELAY)
+   {
+     //printk(KERN_NOTICE "button: Ignored Interrupt! \n");
+     return IRQ_HANDLED;
+   }
+   last_interrupt_time = interrupt_time;
+
+   button_count++;
+   printk(KERN_INFO "button: I got an interrupt.\n");
+   return IRQ_HANDLED;
 }
 
+
+// .read
 static ssize_t button_read( struct file* F, char *buf, size_t count, loff_t *f_pos )
 {
+	printk(KERN_INFO "button irq counts: %d\n", button_count);
+
 	char buffer[10];
 	 
 	int temp = gpio_get_value(GPIO_NUMBER);
@@ -53,7 +87,8 @@ static ssize_t button_read( struct file* F, char *buf, size_t count, loff_t *f_p
 		return 0;
 	}
 }
- 
+
+// .write
 static ssize_t button_write( struct file* F, const char *buf, size_t count, loff_t *f_pos )
 {
 	printk(KERN_INFO "button: Executing WRITE.\n");
@@ -62,8 +97,8 @@ static ssize_t button_write( struct file* F, const char *buf, size_t count, loff
 	{
 	case '0':
 		gpio_set_value(GPIO_NUMBER, 0);
+		button_count = 0;
 	break;
-	 
 	case '1':
 		gpio_set_value(GPIO_NUMBER, 1);
 	break;
@@ -75,12 +110,14 @@ static ssize_t button_write( struct file* F, const char *buf, size_t count, loff
  
 	return count;
 }
- 
+
+// .open
 static int button_open( struct inode *inode, struct file *file )
 {
 	return 0;
 }
- 
+
+// .close
 static int button_close( struct inode *inode, struct file *file )
 {
 	return 0;
@@ -97,8 +134,13 @@ static struct file_operations FileOps =
  
 static int __init init_button(void)
 {
+	 struct timeval tv;
 	//init_result = register_chrdev( 0, "gpio", &FileOps );
 	 
+	 do_gettimeofday(&tv) ;
+	 epochMilli = (uint64_t)tv.tv_sec * (uint64_t)1000    + (uint64_t)(tv.tv_usec / 1000) ;
+
+
 	init_result = alloc_chrdev_region( &first, 0, 1, "button_driver" );
 	 
 	if( 0 > init_result )
@@ -162,6 +204,7 @@ static int __init init_button(void)
 		device_destroy( cl, first );
 		class_destroy( cl );
 		unregister_chrdev_region( first, 1 );
+
 		return -1;
 	}
 	else
@@ -191,6 +234,6 @@ static void __exit cleanup_button(void)
 module_init(init_button);
 module_exit(cleanup_button);
  
-MODULE_AUTHOR("Sanchayan");
+MODULE_AUTHOR("Birkir Oskarsson & Bjorn Smith");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Beagleboard-xM GPIO Driver");
+MODULE_DESCRIPTION("Beaglebone Black gpio1_28 irq driver");
