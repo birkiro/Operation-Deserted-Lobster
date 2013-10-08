@@ -30,7 +30,10 @@ static uint64_t epochMilli;
 //short int irq_any_gpio    = 0;
 
 
-// Timer for interrupt debounce
+/*
+ * Timer for interrupt debounce, borrowed from
+ * http://raspberrypi.stackexchange.com/questions/8544/gpio-interrupt-debounce
+ */
 unsigned int millis (void)
 {
   struct timeval tv ;
@@ -42,6 +45,9 @@ unsigned int millis (void)
   return (uint32_t)(now - epochMilli) ;
 }
 
+/*
+ * The interrupt handler function
+ */
 static irqreturn_t button_handler(int irq, void *dev_id)
 {
    unsigned int interrupt_time = millis();
@@ -59,7 +65,9 @@ static irqreturn_t button_handler(int irq, void *dev_id)
 }
 
 
-// .read
+/*
+ * .read
+ */
 static ssize_t button_read( struct file* F, char *buf, size_t count, loff_t *f_pos )
 {
 	printk(KERN_INFO "button irq counts: %d\n", button_count);
@@ -88,7 +96,9 @@ static ssize_t button_read( struct file* F, char *buf, size_t count, loff_t *f_p
 	}
 }
 
-// .write
+/*
+ * .write
+ */
 static ssize_t button_write( struct file* F, const char *buf, size_t count, loff_t *f_pos )
 {
 	printk(KERN_INFO "button: Executing WRITE.\n");
@@ -111,13 +121,17 @@ static ssize_t button_write( struct file* F, const char *buf, size_t count, loff
 	return count;
 }
 
-// .open
+/*
+ * / .open
+ */
 static int button_open( struct inode *inode, struct file *file )
 {
 	return 0;
 }
 
-// .close
+/*
+ * .close
+ */
 static int button_close( struct inode *inode, struct file *file )
 {
 	return 0;
@@ -131,7 +145,10 @@ static struct file_operations FileOps =
 	.write        = button_write,
 	.release      = button_close,
 };
- 
+
+/*
+ * Module init function.
+ */
 static int __init init_button(void)
 {
 	 struct timeval tv;
@@ -215,11 +232,11 @@ static int __init init_button(void)
 	 
 	return 0; 
 }
- 
+/*
+ * Module exit function
+ */
 static void __exit cleanup_button(void)
 {
-	//unregister_chrdev( init_result, "gpio" );
-	 
 	cdev_del( &c_dev );
 	device_destroy( cl, first );
 	class_destroy( cl );
