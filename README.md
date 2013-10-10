@@ -1,6 +1,13 @@
-solar-controller
+DIS & EPRO
 ===================
 
-EPRO1 - SolarPanelTester (2013)
+Distributed Embedded Systems and Embedded Project
 
-A BeagleBone based divece to test solarpanels performance on-sight
+A device driver Development for the Beaglebone black, including device drivers for:
+
+Echo Device
+Button gpio
+Button with interrupts
+Buttons with interrupts
+
+More to come
