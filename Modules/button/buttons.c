@@ -354,8 +354,10 @@ static void __exit cleanup_button(void)
 
 	printk(KERN_ALERT "button: Device unregistered\n");
 
-	free_irq(button_irq, NULL);
+	free_irq(button1_irq, NULL);
+	free_irq(button2_irq, NULL);
 	gpio_free(GPIO_NUMBER);
+	gpio_free(GPIO_SECOND);
 }
 
 module_init( init_button);
