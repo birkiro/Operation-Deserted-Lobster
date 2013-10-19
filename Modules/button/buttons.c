@@ -142,7 +142,7 @@ static ssize_t button1_write(struct file* F, const char *buf, size_t count,
 	switch (buf[0]) {
 	case '0':
 		gpio_set_value(GPIO_NUMBER, 0);
-		button_count = 0;
+		button1_count = 0;
 		break;
 	case '1':
 		gpio_set_value(GPIO_NUMBER, 1);
@@ -162,7 +162,7 @@ static ssize_t button2_write(struct file* F, const char *buf, size_t count,
 	switch (buf[0]) {
 	case '0':
 		gpio_set_value(GPIO_SECOND, 0);
-		button_count = 0;
+		button2_count = 0;
 		break;
 	case '1':
 		gpio_set_value(GPIO_SECOND, 1);
@@ -280,7 +280,7 @@ static int __init init_button(void)
 		}
 		else
 		{
-			printk( KERN_ALERT "button: Device irq number is %d\n", button_irq );
+			printk( KERN_ALERT "button: Device irq number is %d\n", button1_irq );
 		}
 	}
 
@@ -335,7 +335,7 @@ static int __init init_button(void)
 		}
 		else
 		{
-			printk( KERN_ALERT "button: Device irq number is %d\n", button_irq );
+			printk( KERN_ALERT "button: Device irq number is %d\n", button2_irq );
 		}
 	}
 
