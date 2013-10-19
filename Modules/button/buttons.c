@@ -22,9 +22,14 @@ static dev_t first;     	// Global variable for the first device number
 static struct cdev c_dev, c_dev2;	// Global variable for the character device structure
 static struct class *cl;	// Global variable for the device class
 
-static int init_result;
-static int button_irq = 0;
-static int button_count = 0; // irq count
+static int 	init_result;
+static int 	button_irq = 0;
+static int 	button_count = 0; // irq count
+
+static u8	buttons = 1;
+MODULE_PARM(buttons, "b");
+MODULE_PARM_DESC(buttons, "This byte decides the number of buttons (1-2)");
+
 
 unsigned int last_interrupt_time = 0;
 static uint64_t epochMilli;
@@ -72,7 +77,7 @@ static ssize_t button1_read( struct file* F, char *buf, size_t count, loff_t *f_
 	printk(KERN_INFO "button irq counts: %d\n", button_count);
 
 	char buffer[10];
-	 
+
 	int temp = gpio_get_value(GPIO_NUMBER);
 	 
 	sprintf( buffer, "%1d" , temp );
@@ -186,6 +191,8 @@ static struct file_operations FileOps2 =
  */
 static int __init init_button(void)
 {
+	printk(KERN_ALERT "buttons value is: %i\n", buttons);
+
 	 struct timeval tv;
 	//init_result = register_chrdev( 0, "gpio", &FileOps );
 
