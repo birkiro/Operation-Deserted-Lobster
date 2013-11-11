@@ -1,9 +1,8 @@
-#include <tomcrypt.h>
-
+#include "tomcrypt.h"
+//#include <tomcrypt_math.h>
 int main(void)
 
 {
-
 	int err, hash_idx, prng_idx, res;
 
 	unsigned long l1, l2;
@@ -22,7 +21,7 @@ int main(void)
 
 	}
 
-	/* register a math library (in this case TomsFastMath)
+	/* register a math library (in this case TomsFastMath) */
 
 	 ltc_mp = tfm_desc;
 
