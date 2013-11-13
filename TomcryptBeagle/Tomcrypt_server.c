@@ -1,13 +1,19 @@
 #include "tomcrypt.h"
-//#include <tomcrypt_math.h>
+//#include "tomcrypt_custom.h"
+
 int main(void)
 
 {
+	printf("into main\n");
+
 	int err, hash_idx, prng_idx, res;
 
 	unsigned long l1, l2;
 
-	unsigned char pt[16], pt2[16], out[1024];
+	unsigned char pt[16]= {0x61, 0x62, 0x63, 0x61, 0x62, 0x63, 0x61, 0x62, 0x63, 0x61, 0x62, 0x63, 0x61, 0x62};
+	unsigned char pt2[16], out[1024];
+
+
 
 	rsa_key key;
 
@@ -23,7 +29,9 @@ int main(void)
 
 	/* register a math library (in this case TomsFastMath) */
 
-	 ltc_mp = tfm_desc;
+	//ltc_mp = tfm_desc;
+
+	 ltc_mp = ltm_desc; // normal math library
 
 	 if (register_hash(&sha1_desc) == -1) {
 
@@ -58,6 +66,10 @@ int main(void)
 	}
 
 	/* fill in pt[] with a key we want to send ... */
+	//pt=
+	printf("pt = %s\n",pt);
+	printf("pt2 = %s\n",pt2);
+
 
 	l1 = sizeof(out);
 
@@ -120,4 +132,6 @@ int main(void)
 	}
 
 	/* if all went well pt == pt2, l2 == 16, res == 1 */
+	printf("pt = %s\n",pt);
+		printf("pt2 = %s\n",pt2);
 }
