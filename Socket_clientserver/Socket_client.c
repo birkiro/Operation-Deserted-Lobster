@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
 {
     int sockfd, numbytes;
     char buf[MAXDATASIZE];
+    char inputWord;
     struct hostent *host_entry;
     struct sockaddr_in connectors_addr; // connector's address information
 
@@ -91,24 +92,39 @@ int main(int argc, char *argv[])
     connectors_addr.sin_addr = *((struct in_addr *)host_entry->h_addr);
     memset(&(connectors_addr.sin_zero), '\0', 8);  // zero the rest of the struct
 
-    // connect()
-    if (connect(sockfd, (struct sockaddr *)&connectors_addr, sizeof(struct sockaddr)) == -1)
-    {
-        perror("connect");
-        exit(1);
-    }
+	//while(1)
+	{
+		// connect()
+		if (connect(sockfd, (struct sockaddr *)&connectors_addr, sizeof(struct sockaddr)) == -1)
+		{
+			perror("Error Connecting to Server");
+			exit(1);
+		}
 
-    // The socket read() function
-    if ((numbytes=recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }
 
-    buf[numbytes] = '\0';  // NULL
+		// Socket write() function
+		printf("Message to server: ");
+		bzero(buf, MAXDATASIZE);
+		fgets(buf, MAXDATASIZE, stdin);
+		numbytes = write(sockfd, buf, strlen(buf));
 
-    printf("Received: %s",buf);
+		if(numbytes < 0)
+		{
+			perror("Error in write()");
+			exit(1);
+		}
 
-    close(sockfd);
+		// The socket read() function
+		if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+			perror("recv");
+			exit(1);
+		}
 
+		buf[numbytes] = '\0';  // NULL
+
+		printf("Received: %s\n",buf);
+
+		close(sockfd);
+	}
     return 0;
 }
