@@ -30,15 +30,15 @@
 	+-----------+                 |
 	     v                        v
 	+-----------+           +-------------+
-	|  write()  |+--------> |    read()   |<---+
-	+-----------+           +-------------+    |
-	     +                        +            |
-	     |                        |            |
-	     |                 process request     |
-	     |                        |            |
-	     v                        v            |
-	+------------+          +-------------+    |
-	|   read()   |<--------+|   write()   |+---+
++-->|  write()  |+--------> |    read()   |<---+
+|	+-----------+           +-------------+    |
+|	     +                        +            |
+|	     |                        |            |
+|	     |                 process request     |
+|	     |                        |            |
+|	     v                        v            |
+|	+------------+          +-------------+    |
++--+|   read()   |<--------+|   write()   |+---+
 	+------------+          +-------------+
 	     v                        v
 	+------------+          +-------------+
@@ -69,17 +69,14 @@ int main(int argc, char *argv[])
     struct hostent *host_entry;
     struct sockaddr_in connectors_addr; // connector's address information
 
-    if (argc != 2) { // Check if user passes two arguments
+    if (argc != 2)
+    { // Check if user passes an argument
         fprintf(stderr,"Usage Example: ./client 192.168.7.2\n");
         exit(1);
     }
 
     // Extract the host info from the passed argument
-    if ((host_entry = gethostbyname( argv[1]) ) == NULL)
-    {
-        perror("gethostbyname");
-        exit(1);
-    }
+    if ((host_entry = gethostbyname( argv[1]) ) == NULL) { perror("gethostbyname"); exit(1); }
 
     // socket()
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -92,39 +89,27 @@ int main(int argc, char *argv[])
     connectors_addr.sin_addr = *((struct in_addr *)host_entry->h_addr);
     memset(&(connectors_addr.sin_zero), '\0', 8);  // zero the rest of the struct
 
-	//while(1)
+	// connect()
+	if (connect(sockfd, (struct sockaddr *)&connectors_addr, sizeof(struct sockaddr)) == -1)
 	{
-		// connect()
-		if (connect(sockfd, (struct sockaddr *)&connectors_addr, sizeof(struct sockaddr)) == -1)
-		{
-			perror("Error Connecting to Server");
-			exit(1);
-		}
+		perror("Error Connecting to Server");
+		exit(1);
+	}
 
-
+	while(1)
+	{
 		// Socket write() function
-		printf("Message to server: ");
-		bzero(buf, MAXDATASIZE);
-		fgets(buf, MAXDATASIZE, stdin);
-		numbytes = write(sockfd, buf, strlen(buf));
-
-		if(numbytes < 0)
-		{
-			perror("Error in write()");
-			exit(1);
-		}
+		printf("Send a message to server: ");
+		bzero(buf, MAXDATASIZE);					// Fill buffer with zeros
+		fgets(buf, MAXDATASIZE, stdin);				// Read from stream
+		numbytes = write(sockfd, buf, strlen(buf)); // send buffer content through socket
+		if(numbytes < 0) { perror("Error in write()"); exit(1); }
 
 		// The socket read() function
-		if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-			perror("recv");
-			exit(1);
-		}
-
+		if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) { perror("recv"); exit(1); }
 		buf[numbytes] = '\0';  // NULL
-
-		printf("Received: %s\n",buf);
-
-		close(sockfd);
+		printf("Received: %s",buf);
 	}
+	close(sockfd);
     return 0;
 }
