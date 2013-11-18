@@ -41,10 +41,10 @@ int OpenConnection(const char *hostname, int port)
 
     if ( (host = gethostbyname(hostname)) == NULL )
     {
-        perror(hostname);
-        abort();
+        perror("hostname");
+        exit(1);
     }
-    sd = socket(PF_INET, SOCK_STREAM, 0);
+    if((sd = socket(PF_INET, SOCK_STREAM, 0)) == -1){ perror("socket"); exit(1); }
     bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
