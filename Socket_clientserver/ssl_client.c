@@ -115,7 +115,7 @@ int main()
     if ( SSL_connect(ssl) == FAIL )   /* perform the connection */
         ERR_print_errors_fp(stderr);
     else
-    {   char *msg = "Hello???";
+    {   char *msg = "Greetings from client";
 
         printf("Connected with %s encryption\n", SSL_get_cipher(ssl));
         ShowCerts(ssl);        /* get any certs */
