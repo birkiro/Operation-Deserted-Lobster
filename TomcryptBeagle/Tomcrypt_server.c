@@ -10,9 +10,7 @@ int main(void)
 
 	unsigned long l1, l2;
 
-	unsigned char pt[16]= {0x61, 0x62, 0x63, 0x61, 0x62, 0x63, 0x61, 0x62, 0x63, 0x61, 0x62, 0x63, 0x61, 0x62};
-	unsigned char pt2[16], out[1024];
-
+	unsigned char pt[30], pt2[30], out[1024];
 
 
 	rsa_key key;
@@ -66,7 +64,10 @@ int main(void)
 	}
 
 	/* fill in pt[] with a key we want to send ... */
-	//pt=
+
+
+	strcpy((char*)pt, "test input, salute");
+
 	printf("pt = %s\n",pt);
 	printf("pt2 = %s\n",pt2);
 
@@ -75,7 +76,7 @@ int main(void)
 
 	if ((err = rsa_encrypt_key(pt, /* data we wish to encrypt */
 
-			16, /* data is 16 bytes long */
+			30, /* data is 16 bytes long */
 
 			out, /* where to store ciphertext */
 
