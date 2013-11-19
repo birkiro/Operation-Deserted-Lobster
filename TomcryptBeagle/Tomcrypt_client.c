@@ -4,13 +4,13 @@
 char buf[MAXDATASIZE];
 
 int err, hash_idx, prng_idx, res;
-rsa_key key;
+rsa_key private_key, public_key;
 FILE* file;
 char private_key_file[200], public_key_file[200];
 
 int key_generator(void) {
 	/* make an RSA-1024 key */
-
+	rsa_key key;
 	if ((err = rsa_make_key(NULL, /* PRNG state */
 	prng_idx, /* PRNG idx */
 	1024 / 8, /* 1024-bit key */
@@ -45,22 +45,81 @@ int key_generator(void) {
 	fclose(file);
 	printf("\n\n");
 
-
 	outlen = sizeof(out);
-	 if ((err = rsa_export(out, &outlen, PK_PRIVATE, &key)) != CRYPT_OK) {
-	 printf("Export error: %s\n", error_to_string(err));
-	 return -1;
-	 }
-	 printf("The private key is: %lu\n", outlen);
+	if ((err = rsa_export(out, &outlen, PK_PRIVATE, &key)) != CRYPT_OK) {
+		printf("Export error: %s\n", error_to_string(err));
+		return -1;
+	}
+	printf("The private key is: %lu\n", outlen);
 
-	 file = fopen("private_key", "a");
-	 	for (i = 0; i < outlen; ++i) {
-	 		printf("%c", out[i]);
-	 		fprintf(file, "%c", out[i]);
-	 	}
-	 	fclose(file);
-	 	printf("\n\n");
+	file = fopen("private_key", "a");
+	for (i = 0; i < outlen; ++i) {
+		printf("%c", out[i]);
+		fprintf(file, "%c", out[i]);
+	}
+	fclose(file);
+	printf("\n\n");
 
+	return 0;
+}
+
+int key_import() {
+	/* read keys
+	 *	This function first, imports the raw keys from binary files
+	 *	Then converts them to respectably private_key and public_key
+	 *	Where Private are used to decrypt received msg, and public to encrypt msg to server
+	 */
+
+
+	file = fopen("public_key", "r");
+
+	fseek(file, 0, SEEK_END); 	// seek to end of file
+	int key_size = ftell(file);	// get current file pointer
+	fseek(file, 0, SEEK_SET); 	// seek back to beginning of file
+								// proceed with allocating memory and reading the file
+
+	char import_key_array[key_size];
+
+	unsigned long i = 0;
+	for (i = 0; i < key_size; ++i) {
+		fscanf(file, "%c", &import_key_array[i]);
+		printf("%c",import_key_array[i]);
+	}
+	fclose(file);
+	printf("\n\n");
+
+	file = fopen("private_key", "r");
+
+	fseek(file, 0, SEEK_END); 	// seek to end of file
+	key_size = ftell(file);	// get current file pointer
+	fseek(file, 0, SEEK_SET); 	// seek back to beginning of file
+								// proceed with allocating memory and reading the file
+
+	unsigned char import_key_array2[key_size];
+
+
+	for (i = 0; i < key_size; ++i) {
+		fscanf(file, "%c", &import_key_array2[i]);
+		printf("%c",import_key_array2[i]);
+	}
+	fclose(file);
+	printf("\n\n");
+
+	unsigned long inlen = sizeof(import_key_array2);
+
+	if ((err = rsa_import(import_key_array2, inlen, &private_key)) != CRYPT_OK) {
+			printf("Export error: %s\n", error_to_string(err));
+			return -1;
+		}
+	inlen = sizeof(import_key_array);
+
+	if ((err = rsa_import(import_key_array, inlen, &public_key)) != CRYPT_OK) {
+			printf("Export error: %s\n", error_to_string(err));
+			return -1;
+		}
+
+
+	printf("Keys imported.\n\n");
 	return 0;
 }
 
@@ -97,7 +156,7 @@ int main(int argc, char *argv[]) {
 			break;
 		case '2':
 			printf("2: Import keys\n");
-
+			key_import();
 			break;
 		case '3':
 			printf("3: Initiate communication\n");
