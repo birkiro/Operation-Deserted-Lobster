@@ -14,6 +14,9 @@ unsigned long pt_lenght = PLAINTEXT_SIZE;
 unsigned char cipher_in[CIPHER_SIZE], cipher_out[CIPHER_SIZE]; //for encrypted msg's both ways
 unsigned long cipher_lenght = CIPHER_SIZE;
 
+unsigned long int generated_random_number;
+
+
 int key_generator(void) {
 	/* make an RSA-1024 key */
 	rsa_key key;
@@ -83,7 +86,7 @@ int key_import() {
 	fseek(file, 0, SEEK_SET); // seek back to beginning of file
 							  // proceed with allocating memory and reading the file
 
-	char import_key_array[key_size];
+	unsigned char import_key_array[key_size];
 
 	unsigned long i = 0;
 	for (i = 0; i < key_size; ++i) {
@@ -229,15 +232,27 @@ int main(int argc, char *argv[]) {
 			break;
 		case '3':
 			printf("3: Initiate communication\n");
-			strcpy((char*) pt_out, "test input string here!!! wuuhuu");
+			generated_random_number = random();
+			sprintf((char*)pt_out, "%lu",generated_random_number);
+			//memcpy(pt_out, (char*)generated_random_number, 10);
+			//strcpy((char*) pt_out, "test input string here!");
 			encrypt_msg();
 			unsigned long i = 0;
 			for (; i < CIPHER_SIZE; i++) {
 				cipher_in[i] = cipher_out[i];
 			}
 			decrypt_msg();
-			printf("pt_in = %s\n", pt_in);
 			printf("pt_out = %s\n", pt_out);
+			printf("pt_in = %s\n", pt_in);
+
+			//unsigned long generated_random_number2;
+			//memcpy(generated_random_number2, &pt_out, 10);
+			if(pt_in==pt_out){
+				printf("keys are correct !!!\n");
+			}
+			else{
+				printf("keys not correct !!!\n");
+			}
 
 			break;
 		default:
