@@ -10,6 +10,7 @@
 #include <openssl/err.h>
 
 #define FAIL    -1
+#define MAXDATASIZE 100 // max number of bytes we can get at once
 
     //Added the LoadCertificates how in the server-side makes.
 void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
@@ -102,8 +103,8 @@ int main()
     int bytes;
     char hostname[]="192.168.7.2";
     char portnum[]="5000";
-    char CertFile[] = "/home/birkiro/beaglebone-dev/EPRO2/Operation-Deserted-Lobster/bin/mycert.pem";
-    char KeyFile[] = "/home/birkiro/beaglebone-dev/EPRO2/Operation-Deserted-Lobster/bin/mycert.pem";
+    char CertFile[] = "/home/birkiro/beaglebone-dev/EPRO2/Operation-Deserted-Lobster/bin/certbirkir.pem";
+    char KeyFile[] = "/home/birkiro/beaglebone-dev/EPRO2/Operation-Deserted-Lobster/bin/certbirkir.pem";
 
     SSL_library_init();
 
@@ -115,14 +116,19 @@ int main()
     if ( SSL_connect(ssl) == FAIL )   /* perform the connection */
         ERR_print_errors_fp(stderr);
     else
-    {   char *msg = "Greetings from client";
+    {   char *msg;
+    	// Socket write() function
+		printf("Send a message to server: ");
+		bzero(msg, MAXDATASIZE);					// Fill buffer with zeros
+		fgets(msg, MAXDATASIZE, stdin);				// Read from stream
+
 
         printf("Connected with %s encryption\n", SSL_get_cipher(ssl));
         ShowCerts(ssl);        /* get any certs */
         SSL_write(ssl, msg, strlen(msg));   /* encrypt & send message */
         bytes = SSL_read(ssl, buf, sizeof(buf)); /* get reply & decrypt */
         buf[bytes] = 0;
-        printf("Received: \"%s\"\n", buf);
+        printf("Received: %s\n", buf);
         SSL_free(ssl);        /* release connection state */
     }
     close(server);         /* close socket */

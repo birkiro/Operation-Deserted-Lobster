@@ -109,7 +109,7 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {   char buf[1024];
     char reply[1024];
     int sd, bytes;
-    const char* HTMLecho="<html><body><pre>%s</pre></body></html>\n\n";
+    //const char* HTMLecho="<html><body><pre>%s</pre></body></html>\n\n";
 
     if ( SSL_accept(ssl) == FAIL )     /* do SSL-protocol accept */
         ERR_print_errors_fp(stderr);
@@ -120,8 +120,9 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
         if ( bytes > 0 )
         {
             buf[bytes] = 0;
-            printf("Client msg: \"%s\"\n", buf);
-            sprintf(reply, HTMLecho, buf);   /* construct reply */
+            printf("Client msg: %s\n", buf);
+
+            sprintf(reply, buf, buf);   /* construct reply */
             SSL_write(ssl, reply, strlen(reply)); /* send reply */
         }
         else
@@ -137,8 +138,8 @@ int main()
     int server;
     char portnum[]="5000";
 
-        char CertFile[] = "/home/root/mycert.pem";
-        char KeyFile[] = "/home/root/mycert.pem";
+        char CertFile[] = "/home/root/certbirkir.pem";
+        char KeyFile[] = "/home/root/certbirkir.pem";
 
     SSL_library_init();
 
