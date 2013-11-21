@@ -5,7 +5,7 @@ int main(void) {
 	int x, err;
 
 	/* register twofish first */
-	if (register_cipher(&twofish_desc) == -1) {
+	if (register_cipher(&aes_desc) == -1) {
 		printf("Error registering cipher.\n");
 		return -1;
 	}
@@ -16,7 +16,7 @@ int main(void) {
 	strcpy((char*) IV, "0123456789012345");
 
 	/* start up CTR mode */
-	if ((err = ctr_start(find_cipher("aes_desc"), /* index of desired cipher */
+	if ((err = ctr_start(find_cipher("aes"), /* index of desired cipher */
 							IV, /* the initial vector */
 							key, /* the secret key */
 							16, /* length of secret key (16 bytes) */
@@ -30,6 +30,7 @@ int main(void) {
 
 	/* somehow fill buffer then encrypt it */
 	strcpy((char*) buffer, "this is my test text");
+	printf("before:%s\n",buffer);
 
 	if ((err = ctr_encrypt(buffer, /* plaintext */
 							buffer, /* ciphertext */
@@ -41,6 +42,7 @@ int main(void) {
 	}
 
 	/* make use of ciphertext... */
+	printf("while:%s\n",buffer);
 	/* now we want to decrypt so let’s use ctr_setiv */
 	if ((err = ctr_setiv(IV, /* the initial IV we gave to ctr_start */
 						16, /* the IV is 16 bytes long */
@@ -63,6 +65,8 @@ int main(void) {
 		printf("ctr_done error: %s\n", error_to_string(err));
 		return -1;
 	}
+	printf("after:%s\n",buffer);
+
 	/* clear up and return */
 	zeromem(key, sizeof(key));
 	zeromem(&ctr, sizeof(ctr));
