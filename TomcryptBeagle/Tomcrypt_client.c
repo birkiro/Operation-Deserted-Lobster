@@ -91,7 +91,7 @@ int key_import() {
 	unsigned long i = 0;
 	for (i = 0; i < key_size; ++i) {
 		fscanf(file, "%c", &import_key_array[i]);
-		printf("%c", import_key_array[i]);
+//		printf("%c", import_key_array[i]);
 	}
 	fclose(file);
 	printf("\n\n");
@@ -107,7 +107,7 @@ int key_import() {
 
 	for (i = 0; i < key_size; ++i) {
 		fscanf(file, "%c", &import_key_array2[i]);
-		printf("%c", import_key_array2[i]);
+//		printf("%c", import_key_array2[i]);
 	}
 	fclose(file);
 	printf("\n\n");
@@ -245,9 +245,11 @@ int main(int argc, char *argv[]) {
 			printf("pt_out = %s\n", pt_out);
 			printf("pt_in = %s\n", pt_in);
 
-			//unsigned long generated_random_number2;
+			unsigned long generated_random_number2=0;
+
+			sscanf((char*)pt_in, "%lu",&generated_random_number2 );
 			//memcpy(generated_random_number2, &pt_out, 10);
-			if(pt_in==pt_out){
+			if(generated_random_number==generated_random_number2){
 				printf("keys are correct !!!\n");
 			}
 			else{
