@@ -12,26 +12,26 @@
 
 #define FAIL    -1
 
-int OpenListener(int port)
-{   int sd;
+int OpenServerSocket(int port)
+{   int my_socket;
     struct sockaddr_in addr;
 
-    sd = socket(PF_INET, SOCK_STREAM, 0);
+    my_socket = socket(PF_INET, SOCK_STREAM, 0);
     bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = INADDR_ANY;
-    if ( bind(sd, (struct sockaddr*)&addr, sizeof(addr)) != 0 )
+    if ( bind(my_socket, (struct sockaddr*)&addr, sizeof(addr)) != 0 )
     {
         perror("can't bind port");
         abort();
     }
-    if ( listen(sd, 10) != 0 )
+    if ( listen(my_socket, 10) != 0 )
     {
         perror("Can't configure listening port");
         abort();
     }
-    return sd;
+    return my_socket;
 }
 
 SSL_CTX* InitServerCTX(void)
@@ -108,7 +108,7 @@ void ShowCerts(SSL* ssl)
 void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {   char buf[1024];
     char reply[1024];
-    int sd, bytes;
+    int my_socket, bytes;
     //const char* HTMLecho="<html><body><pre>%s</pre></body></html>\n\n";
 
     if ( SSL_accept(ssl) == FAIL )     /* do SSL-protocol accept */
@@ -128,9 +128,9 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
         else
             ERR_print_errors_fp(stderr);
     }
-    sd = SSL_get_fd(ssl);       /* get socket connection */
+    my_socket = SSL_get_fd(ssl);       /* get socket connection */
     SSL_free(ssl);         /* release SSL state */
-    close(sd);          /* close connection */
+    close(my_socket);          /* close connection */
 }
 
 int main()
@@ -145,7 +145,7 @@ int main()
 
     ctx = InitServerCTX();        /* initialize SSL */
     LoadCertificates(ctx, CertFile, KeyFile); /* load certs */
-    server = OpenListener(atoi(portnum));    /* create server socket */
+    server = OpenServerSocket(atoi(portnum));    /* create server socket */
     while (1)
     {   struct sockaddr_in addr;
         socklen_t len = sizeof(addr);

@@ -35,28 +35,35 @@ void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
     }
 }
 
-int OpenConnection(const char *hostname, int port)
-{   int sd;
+int OpenClientSocket(const char *hostname, int port)
+{   int my_socket;
     struct hostent *host;
     struct sockaddr_in addr;
 
     if ( (host = gethostbyname(hostname)) == NULL )
     {
-        perror("hostname");
-        exit(1);
+    	perror("hostname");
+    	exit(1);
     }
-    if((sd = socket(PF_INET, SOCK_STREAM, 0)) == -1){ perror("socket"); exit(1); }
+    // socket()
+    if((my_socket = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+    {
+    	perror("socket");
+    	exit(1);
+    }
     bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = *(long*)(host->h_addr);
-    if ( connect(sd, (struct sockaddr*)&addr, sizeof(addr)) != 0 )
+
+    // connect()
+    if ( connect(my_socket, (struct sockaddr*)&addr, sizeof(addr)) != 0 )
     {
-        close(sd);
+        close(my_socket);
         perror(hostname);
         abort();
     }
-    return sd;
+    return my_socket;
 }
 
 SSL_CTX* InitCTX(void)
@@ -110,7 +117,7 @@ int main()
 
     ctx = InitCTX();
     LoadCertificates(ctx, CertFile, KeyFile);
-    server = OpenConnection(hostname, atoi(portnum));
+    server = OpenClientSocket(hostname, atoi(portnum));
     ssl = SSL_new(ctx);      /* create new SSL connection state */
     SSL_set_fd(ssl, server);    /* attach the socket descriptor */
     if ( SSL_connect(ssl) == FAIL )   /* perform the connection */
