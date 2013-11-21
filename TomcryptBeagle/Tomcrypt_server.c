@@ -1,138 +1,70 @@
-#include "tomcrypt.h"
-//#include "tomcrypt_custom.h"
+#include <tomcrypt.h>
+int main(void) {
+	unsigned char key[16], IV[16], buffer[512];
+	symmetric_CTR ctr;
+	int x, err;
 
-int main(void)
-
-{
-	printf("into main\n");
-
-	int err, hash_idx, prng_idx, res;
-
-	unsigned long l1, l2;
-
-	unsigned char pt[30], pt2[30], out[1024];
-
-
-	rsa_key key;
-
-	/* register prng/hash */
-
-	if (register_prng(&sprng_desc) == -1) {
-
-		printf("Error registering sprng");
-
-		return EXIT_FAILURE;
-
+	/* register twofish first */
+	if (register_cipher(&twofish_desc) == -1) {
+		printf("Error registering cipher.\n");
+		return -1;
 	}
 
-	/* register a math library (in this case TomsFastMath) */
+	/* somehow fill out key and IV */
 
-	//ltc_mp = tfm_desc;
+	strcpy((char*) key, "1231231231231231");
+	strcpy((char*) IV, "0123456789012345");
 
-	 ltc_mp = ltm_desc; // normal math library
+	/* start up CTR mode */
+	if ((err = ctr_start(find_cipher("aes_desc"), /* index of desired cipher */
+							IV, /* the initial vector */
+							key, /* the secret key */
+							16, /* length of secret key (16 bytes) */
+							0, /* 0 == default # of rounds */
+							CTR_COUNTER_LITTLE_ENDIAN, /* Little endian counter */
+							&ctr) /* where to store the CTR state */
+		) != CRYPT_OK) {
+		printf("ctr_start error: %s\n", error_to_string(err));
+		return -1;
+	}
 
-	 if (register_hash(&sha1_desc) == -1) {
+	/* somehow fill buffer then encrypt it */
+	strcpy((char*) buffer, "this is my test text");
 
-	 printf("Error registering sha1");
+	if ((err = ctr_encrypt(buffer, /* plaintext */
+							buffer, /* ciphertext */
+							sizeof(buffer), /* length of plaintext pt */
+							&ctr) /* CTR state */
+	) != CRYPT_OK) {
+		printf("ctr_encrypt error: %s\n", error_to_string(err));
+		return -1;
+	}
 
-	 return EXIT_FAILURE;
-
-	 }
-
-	 hash_idx = find_hash("sha1");
-
-	 prng_idx = find_prng("sprng");
-
-	 /* make an RSA-1024 key */
-
-	if ((err = rsa_make_key(NULL, /* PRNG state */
-
-	prng_idx, /* PRNG idx */
-
-	1024 / 8, /* 1024-bit key */
-
-	65537, /* we like e=65537 */
-
-	&key) /* where to store the key */
+	/* make use of ciphertext... */
+	/* now we want to decrypt so let’s use ctr_setiv */
+	if ((err = ctr_setiv(IV, /* the initial IV we gave to ctr_start */
+						16, /* the IV is 16 bytes long */
+						&ctr) /* the ctr state we wish to modify */
+	) != CRYPT_OK) {
+		printf("ctr_setiv error: %s\n", error_to_string(err));
+		return -1;
+	}
+	if ((err = ctr_decrypt(buffer,/* ciphertext */
+							buffer,/* plaintext */
+							sizeof(buffer),/* length of plaintext */
+							&ctr) /* CTR state */
 
 	) != CRYPT_OK) {
-
-		printf("rsa_make_key %s", error_to_string(err));
-
-		return EXIT_FAILURE;
-
+		printf("ctr_decrypt error: %s\n", error_to_string(err));
+		return -1;
 	}
-
-	/* fill in pt[] with a key we want to send ... */
-
-
-	strcpy((char*)pt, "test input, salute");
-
-	printf("pt = %s\n",pt);
-	printf("pt2 = %s\n",pt2);
-
-
-	l1 = sizeof(out);
-
-	if ((err = rsa_encrypt_key(pt, /* data we wish to encrypt */
-
-			30, /* data is 16 bytes long */
-
-			out, /* where to store ciphertext */
-
-			&l1, /* length of ciphertext */
-
-			"TestApp", /* our lparam for this program */
-
-			7, /* lparam is 7 bytes long */
-
-			NULL, /* PRNG state */
-
-			prng_idx, /* prng idx */
-
-			hash_idx, /* hash idx */
-
-			&key) /* our RSA key */
-
-	) != CRYPT_OK) {
-
-		printf("rsa_encrypt_key %s", error_to_string(err));
-
-		return EXIT_FAILURE;
-
+	/* terminate the stream */
+	if ((err = ctr_done(&ctr)) != CRYPT_OK) {
+		printf("ctr_done error: %s\n", error_to_string(err));
+		return -1;
 	}
-
-	/* now let’s decrypt the encrypted key */
-
-	l2 = sizeof(pt2);
-
-	if ((err = rsa_decrypt_key(out, /* encrypted data */
-
-			l1, /* length of ciphertext */
-
-			pt2, /* where to put plaintext */
-
-			&l2, /* plaintext length */
-
-			"TestApp", /* lparam for this program */
-
-			7, /* lparam is 7 bytes long */
-
-			hash_idx, /* hash idx */
-
-			&res, /* validity of data */
-
-			&key) /* our RSA key */
-
-	) != CRYPT_OK) {
-
-		printf("rsa_decrypt_key %s", error_to_string(err));
-
-		return EXIT_FAILURE;
-
-	}
-
-	/* if all went well pt == pt2, l2 == 16, res == 1 */
-	printf("pt = %s\n",pt);
-		printf("pt2 = %s\n",pt2);
+	/* clear up and return */
+	zeromem(key, sizeof(key));
+	zeromem(&ctr, sizeof(ctr));
+	return 0;
 }
