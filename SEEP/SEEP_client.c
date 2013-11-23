@@ -287,7 +287,7 @@ int main(int argc, char *argv[]) {
 			server = OpenClientSocket(hostname, atoi(portnum));
 			printf("Socket connection to server established\n");
 
-			nonceA = random();											//generating random number nonceA
+			nonceA = 10;//random();											//generating random number nonceA
 
 			sprintf((char*)pt_out, "%lu",nonceA);	//generate string and encrypt
 			encrypt_msg();
