@@ -14,8 +14,9 @@
 #define MAXDATASIZE 	100 	// max number of bytes we can get at once
 #define PLAINTEXT_SIZE	50		// lenght of pt
 #define CIPHER_SIZE		1020	// lenght of cipher
+#define SOCKETBUFFERSIZE 1024
 
-#define REQ_FOR_SESSION 0xaa
+#define REQ_FOR_SESSION 0xffffffaa
 
 
 char buf[MAXDATASIZE];
@@ -235,7 +236,7 @@ int decrypt_msg() {
 int main(int argc, char *argv[]) {
 	int server;
 	long sockfd, numbytes;
-	char socketbuf[1024];
+	unsigned char socketbuf[SOCKETBUFFERSIZE];
 	int bytes;
 	char portnum[]="5000";
 	struct sockaddr_in their_addr;
@@ -286,7 +287,8 @@ int main(int argc, char *argv[]) {
 
 			printf("Connection: %s:%d\n",inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 	    	// The socket read() function
-	    	if ((numbytes = recv(client, socketbuf, 1024-1, 0)) == -1)
+			bzero(socketbuf, SOCKETBUFFERSIZE); // Fill buffer with zeros
+	    	if ((numbytes = recv(client, socketbuf, SOCKETBUFFERSIZE, 0)) == -1)
 	    	{
 	    		perror("Failed to receive");
 	    		exit(1);
@@ -295,7 +297,51 @@ int main(int argc, char *argv[]) {
 	    	printf("Message received: %s\n\n",socketbuf);
 	    	printf("Message length: %ld\n",numbytes);
 
+	    	char header=0;
+	    	unsigned char payload[1024];
+	    	unsigned long i = 0;
+	    	bzero(payload, SOCKETBUFFERSIZE); // Fill buffer with zeros
+	    	header=socketbuf[0];
+	    	printf("Message header:asdas \n");
+	    	for(i=0;i < numbytes;i++)
+			{
+				payload[i]=socketbuf[i+1];
+			}
 
+	    	printf("Message header: %x\n",header);
+	    	if(header == REQ_FOR_SESSION){
+	    		printf("REQ_FOR_SESSION\n");
+	    	}
+	    	else
+	    	{
+	    		printf("Not REQ_FOR_SESSION %x\n",header);
+	    	}
+	    	printf("Message payload: %s\n",payload);
+
+	    	bzero(cipher_in, CIPHER_SIZE); // Fill buffer with zeros
+
+	    	for(i=0;i < CIPHER_SIZE;i++)
+	    	{
+	    		cipher_in[i]=payload[i];
+	    	}
+	    	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+	    	for(i=0;i < numbytes;i++)
+			{
+				printf("%x",payload[i]);
+			}
+	    	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+
+
+	    	for(i=0;i < CIPHER_SIZE;i++)
+			{
+				printf("%x",cipher_in[i]);
+			}
+
+	    	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+
+	    	printf("cipher_in: %s\n",cipher_in);
+	    	decrypt_msg();
+	    	printf("NonceA decrypted as: %s\n", pt_in);
 
 /*
 			nonceA = random();											//generating random number nonceA

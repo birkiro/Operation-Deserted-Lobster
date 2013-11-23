@@ -2,7 +2,7 @@
 
 #define MAXDATASIZE 	100 	// max number of bytes we can get at once
 #define PLAINTEXT_SIZE	50		// lenght of pt
-#define CIPHER_SIZE		1024	// lenght of cipher
+#define CIPHER_SIZE		1020	// lenght of cipher
 char buf[MAXDATASIZE];
 
 int err, hash_idx, prng_idx, res;
