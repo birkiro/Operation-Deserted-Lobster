@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
 	long sockfd, numbytes;
 	char socketbuf[1024];
 	int bytes;
-	char hostname[]="192.168.7.2";
+	char hostname[]="127.0.0.1";
 	char portnum[]="5000";
 
 	/* register prng/hash */
@@ -294,11 +294,11 @@ int main(int argc, char *argv[]) {
 			bzero(socketbuf, MAXDATASIZE);							// Fill buffer with zeros
 			strcpy(socketbuf, cipher_out);
 			//fgets(socketbuf, MAXDATASIZE, stdin);					// Read from stream
-			numbytes = write(sockfd, socketbuf, strlen(socketbuf)); // send buffer content through socket
+			numbytes = write(server, socketbuf, strlen(socketbuf)); // send buffer content through socket
 			if(numbytes < 0) { perror("Error in write()"); exit(1);}
 
 ////Do rest here !!! 7A: receive message and decrypt wih Aprivate and store K.
-
+/*
 			decrypt_msg();
 			printf("pt_out = %s\n", pt_out);
 			printf("pt_in = %s\n", pt_in);
@@ -313,7 +313,7 @@ int main(int argc, char *argv[]) {
 			else{
 				printf("keys not correct !!!\n");
 			}
-
+*/
 			break;
 		default:
 			printf("Try again\n");
