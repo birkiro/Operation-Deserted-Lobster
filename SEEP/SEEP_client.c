@@ -11,7 +11,7 @@
 #define FAIL    -1
 #define MAXDATASIZE 	100 	// max number of bytes we can get at once
 #define PLAINTEXT_SIZE	50		// lenght of pt
-#define CIPHER_SIZE		1024	// lenght of cipher
+#define CIPHER_SIZE		1020	// lenght of cipher
 
 #define REQ_FOR_SESSION 0xaa
 
@@ -287,16 +287,19 @@ int main(int argc, char *argv[]) {
 			printf("Socket connection to server established\n");
 
 			nonceA = random();											//generating random number nonceA
-			sprintf((char*)pt_out, "%x,%lu",REQ_FOR_SESSION,nonceA);	//generate string and encrypt
+
+			sprintf((char*)pt_out, "%lu",nonceA);	//generate string and encrypt
 			encrypt_msg();
 			printf("NonceA encrypted\n");
 			printf("Sending message to server\n");
-			bzero(socketbuf, MAXDATASIZE);							// Fill buffer with zeros
-			strcpy(socketbuf, cipher_out);
+			//bzero(socketbuf, MAXDATASIZE);							// Fill buffer with zeros
+			sprintf((char*)socketbuf, "%x,%s",REQ_FOR_SESSION,cipher_out);
+			//strcpy(socketbuf, cipher_out);
 			//fgets(socketbuf, MAXDATASIZE, stdin);					// Read from stream
 			numbytes = write(server, socketbuf, strlen(socketbuf)); // send buffer content through socket
 			if(numbytes < 0) { perror("Error in write()"); exit(1);}
-
+			printf("Message send: %s\n\n",socketbuf);
+			printf("Message length: %ld \n",numbytes);
 ////Do rest here !!! 7A: receive message and decrypt wih Aprivate and store K.
 /*
 			decrypt_msg();

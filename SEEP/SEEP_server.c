@@ -5,13 +5,15 @@
 #include <malloc.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <resolv.h>
 #include <netdb.h>
 
 #define FAIL    -1
 #define MAXDATASIZE 	100 	// max number of bytes we can get at once
 #define PLAINTEXT_SIZE	50		// lenght of pt
-#define CIPHER_SIZE		1024	// lenght of cipher
+#define CIPHER_SIZE		1020	// lenght of cipher
 
 #define REQ_FOR_SESSION 0xaa
 
@@ -236,6 +238,8 @@ int main(int argc, char *argv[]) {
 	char socketbuf[1024];
 	int bytes;
 	char portnum[]="5000";
+	struct sockaddr_in their_addr;
+	int len = sizeof(struct sockaddr_in);
 
 	/* register prng/hash */
 	if (register_prng(&sprng_desc) == -1) {
@@ -274,20 +278,22 @@ int main(int argc, char *argv[]) {
 			printf("3: Initiate communication\n");
 			server = OpenServerSocket(atoi(portnum));    /* create server socket */
 			printf("Socket connection on server Open\n");
-			struct sockaddr_in addr;
-			socklen_t len = sizeof(addr);
+
 			printf("Waits on client connection\n");
-			int client = accept(server, (struct sockaddr*)&addr, &len);  /* accept connection as usual */
+			struct sockaddr_in addr;
+			        socklen_t len = sizeof(addr);
+			int client = accept(server, (struct sockaddr*)&addr, &len);
 
 			printf("Connection: %s:%d\n",inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 	    	// The socket read() function
 	    	if ((numbytes = recv(client, socketbuf, 1024-1, 0)) == -1)
 	    	{
-	    		perror("recv");
+	    		perror("Failed to receive");
 	    		exit(1);
 	    	}
 	    	buf[numbytes] = '\0';  // NULL
-	    	printf("Message received: %s",socketbuf);
+	    	printf("Message received: %s\n\n",socketbuf);
+	    	printf("Message length: %ld\n",numbytes);
 
 
 
