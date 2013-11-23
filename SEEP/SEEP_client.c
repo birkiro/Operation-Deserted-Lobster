@@ -10,19 +10,19 @@
 
 #define FAIL    -1
 #define MAXDATASIZE 	100 	// max number of bytes we can get at once
-#define PLAINTEXT_SIZE	50		// lenght of pt
+#define PLAINTEXT_SIZE	30		// lenght of pt
 #define CIPHER_SIZE		1020	// lenght of cipher
 #define SOCKETBUFFERSIZE 1024
 
 #define REQ_FOR_SESSION 0xaa
 
 
-char buf[MAXDATASIZE];
+unsigned char buf[MAXDATASIZE];
 
 int err, hash_idx, prng_idx, res;
 rsa_key private_key, public_key;
 FILE* file;
-char private_key_file[200], public_key_file[200];
+unsigned char private_key_file[200], public_key_file[200];
 unsigned char pt_in[PLAINTEXT_SIZE], pt_out[PLAINTEXT_SIZE]; //for plain text both ways
 unsigned long pt_lenght = PLAINTEXT_SIZE;
 unsigned char cipher_in[CIPHER_SIZE], cipher_out[CIPHER_SIZE]; //for encrypted msg's both ways
@@ -188,9 +188,9 @@ int encrypt_msg() {
 
 			&cipher_lenght, /* length of ciphertext */
 
-			"TestApp", /* our lparam for this program */
+			NULL, /* our lparam for this program */
 
-			7, /* lparam is 7 bytes long */
+			0, /* lparam is 7 bytes long */
 
 			NULL, /* PRNG state */
 
@@ -205,7 +205,6 @@ int encrypt_msg() {
 		printf("rsa_encrypt_key %s", error_to_string(err));
 
 		return EXIT_FAILURE;
-
 	}
 	return 0;
 }
@@ -221,9 +220,9 @@ int decrypt_msg() {
 
 			&pt_lenght, /* plaintext length */
 
-			"TestApp", /* lparam for this program */
+			NULL, /* lparam for this program */
 
-			7, /* lparam is 7 bytes long */
+			0, /* lparam is 7 bytes long */
 
 			hash_idx, /* hash idx */
 
@@ -244,10 +243,11 @@ int decrypt_msg() {
 int main(int argc, char *argv[]) {
 	int server;
 	long sockfd, numbytes;
-	char socketbuf[SOCKETBUFFERSIZE];
+	unsigned char socketbuf[SOCKETBUFFERSIZE];
 	int bytes;
-	char hostname[]="192.168.1.131";
+	char hostname[]="127.0.0.1";
 	char portnum[]="5000";
+	unsigned long i = 0;
 
 	/* register prng/hash */
 	if (register_prng(&sprng_desc) == -1) {
@@ -287,15 +287,17 @@ int main(int argc, char *argv[]) {
 			server = OpenClientSocket(hostname, atoi(portnum));
 			printf("Socket connection to server established\n");
 
-			nonceA = 10;//random();											//generating random number nonceA
+			nonceA = random();											//generating random number nonceA
 
 			sprintf((char*)pt_out, "%lu",nonceA);	//generate string and encrypt
+			pt_lenght=sizeof(pt_out);
+			cipher_lenght=sizeof(cipher_out);
 			encrypt_msg();
 			printf("NonceA encrypted, was: %s\n", pt_out);
 			printf("Sending message to server\n");
 			//bzero(socketbuf, MAXDATASIZE);							// Fill buffer with zeros
 			//sprintf((char*)socketbuf, "%x,%s",REQ_FOR_SESSION,cipher_out);
-			unsigned long i = 0;
+
 			socketbuf[0]=REQ_FOR_SESSION;			//REQ_FOR_SESSION as start byte
 			for(i=0;i < CIPHER_SIZE;i++)
 			{
@@ -314,19 +316,28 @@ int main(int argc, char *argv[]) {
 			printf("Message send: %s\n\n",socketbuf);
 			printf("Message length: %ld \n",numbytes);
 
-			printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+			printf("\n\n\n\n\n");
 					for(i=0;i < numbytes;i++)
 					{
 						printf("%x",cipher_out[i]);
 					}
-					printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+					printf("\n\n\n\n\n");
 
 ////Do rest here !!! 7A: receive message and decrypt wih Aprivate and store K.
-			for(i=0;i < CIPHER_SIZE;i++)
+			for(i=0;i < numbytes;i++)
 			{
 									cipher_in[i]=socketbuf[i+1];
 			}
+
+
+			for(i=0;i < CIPHER_SIZE;i++)
+						{
+							printf("%x",cipher_in[i]);
+						}
+
+			printf("\n\n\n\n\n");
 			cipher_lenght=(numbytes-1);
+			pt_lenght=sizeof(pt_in);
 			decrypt_msg();
 			printf("pt_out = %s\n", pt_out);
 			printf("pt_in = %s\n", pt_in);

@@ -12,19 +12,19 @@
 
 #define FAIL    -1
 #define MAXDATASIZE 	100 	// max number of bytes we can get at once
-#define PLAINTEXT_SIZE	50		// lenght of pt
+#define PLAINTEXT_SIZE	30		// lenght of pt
 #define CIPHER_SIZE		1020	// lenght of cipher
 #define SOCKETBUFFERSIZE 1024
 
 #define REQ_FOR_SESSION 0xffffffaa
 
 
-char buf[MAXDATASIZE];
+unsigned char buf[MAXDATASIZE];
 
 int err, hash_idx, prng_idx, res;
 rsa_key private_key, public_key;
 FILE* file;
-char private_key_file[200], public_key_file[200];
+unsigned char private_key_file[200], public_key_file[200];
 unsigned char pt_in[PLAINTEXT_SIZE], pt_out[PLAINTEXT_SIZE]; //for plain text both ways
 unsigned long pt_lenght = PLAINTEXT_SIZE;
 unsigned char cipher_in[CIPHER_SIZE], cipher_out[CIPHER_SIZE]; //for encrypted msg's both ways
@@ -180,9 +180,9 @@ int encrypt_msg() {
 
 			&cipher_lenght, /* length of ciphertext */
 
-			"TestApp", /* our lparam for this program */
+			NULL, /* our lparam for this program */
 
-			7, /* lparam is 7 bytes long */
+			0, /* lparam is 7 bytes long */
 
 			NULL, /* PRNG state */
 
@@ -197,7 +197,6 @@ int encrypt_msg() {
 		printf("rsa_encrypt_key %s", error_to_string(err));
 
 		return EXIT_FAILURE;
-
 	}
 	return 0;
 }
@@ -213,9 +212,9 @@ int decrypt_msg() {
 
 			&pt_lenght, /* plaintext length */
 
-			"TestApp", /* lparam for this program */
+			NULL, /* lparam for this program */
 
-			7, /* lparam is 7 bytes long */
+			0, /* lparam is 7 bytes long */
 
 			hash_idx, /* hash idx */
 
@@ -237,10 +236,13 @@ int main(int argc, char *argv[]) {
 	int server;
 	long sockfd, numbytes;
 	unsigned char socketbuf[SOCKETBUFFERSIZE];
+	unsigned char payload[1024];
 	int bytes;
 	char portnum[]="5000";
 	struct sockaddr_in their_addr;
 	int len = sizeof(struct sockaddr_in);
+	unsigned long i = 0;
+	char header=0;
 
 	/* register prng/hash */
 	if (register_prng(&sprng_desc) == -1) {
@@ -283,10 +285,13 @@ int main(int argc, char *argv[]) {
 			printf("Waits on client connection\n");
 			struct sockaddr_in addr;
 			        socklen_t len = sizeof(addr);
+while(1)
+{
 			int client = accept(server, (struct sockaddr*)&addr, &len);
 
 			printf("Connection: %s:%d\n",inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 	    	// The socket read() function
+
 			bzero(socketbuf, SOCKETBUFFERSIZE); // Fill buffer with zeros
 	    	if ((numbytes = recv(client, socketbuf, SOCKETBUFFERSIZE, 0)) == -1)
 	    	{
@@ -297,9 +302,9 @@ int main(int argc, char *argv[]) {
 	    	printf("Message received: %s\n\n",socketbuf);
 	    	printf("Message length: %ld\n",numbytes);
 
-	    	char header=0;
-	    	unsigned char payload[1024];
-	    	unsigned long i = 0;
+	    	header=0;
+
+
 	    	bzero(payload, SOCKETBUFFERSIZE); // Fill buffer with zeros
 	    	header=socketbuf[0];
 	    	printf("Message header:asdas \n");
@@ -324,12 +329,12 @@ int main(int argc, char *argv[]) {
 	    	{
 	    		cipher_in[i]=payload[i];
 	    	}
-	    	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+	    	printf("\n\n\n\n\n");
 	    	for(i=0;i < numbytes;i++)
 			{
 				printf("%x",payload[i]);
 			}
-	    	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+	    	printf("\n\n\n\n\n");
 
 
 	    	for(i=0;i < CIPHER_SIZE;i++)
@@ -337,12 +342,15 @@ int main(int argc, char *argv[]) {
 				printf("%x",cipher_in[i]);
 			}
 
-	    	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+	    	printf("\n\n\n\n\n");
 
 	    	printf("cipher_in: %s\n",cipher_in);
+	    	cipher_lenght=(numbytes-1);
+	    	pt_lenght=sizeof(pt_in);
 	    	decrypt_msg();
 	    	printf("NonceA decrypted as: %s\n", pt_in);
-
+	    	close(client);
+}
 /*
 			nonceA = random();											//generating random number nonceA
 			sprintf((char*)pt_out, "%x,%lu",REQ_FOR_SESSION,nonceA);	//generate string and encrypt
