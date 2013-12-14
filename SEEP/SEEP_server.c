@@ -16,7 +16,9 @@
 #define CIPHER_SIZE		1020	// lenght of cipher
 #define SOCKETBUFFERSIZE 1024
 
-#define REQ_FOR_SESSION 0xffffffaa
+#define REQ_FOR_SESSION 0xaa
+#define NEW_SESSION_KEY 0xdd
+#define ACK_NEW_SESSION_KEY	0xee
 
 
 unsigned char buf[MAXDATASIZE];
@@ -30,7 +32,9 @@ unsigned long pt_lenght = PLAINTEXT_SIZE;
 unsigned char cipher_in[CIPHER_SIZE], cipher_out[CIPHER_SIZE]; //for encrypted msg's both ways
 unsigned long cipher_lenght = CIPHER_SIZE;
 
-unsigned long nonceA;
+unsigned long nonceA, key_copy;
+unsigned char key[16], IV[16];
+
 
 int OpenServerSocket(int port)
 {   int my_socket;
@@ -242,7 +246,11 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in their_addr;
 	int len = sizeof(struct sockaddr_in);
 	unsigned long i = 0;
-	char header=0;
+	unsigned char header=0;
+
+	/* fill out IV */
+	strcpy((char*) IV, "0123456789012345");		//not that safe ;)
+
 
 	/* register prng/hash */
 	if (register_prng(&sprng_desc) == -1) {
@@ -329,57 +337,48 @@ while(1)
 	    	{
 	    		cipher_in[i]=payload[i];
 	    	}
-	    	printf("\n\n\n\n\n");
-	    	for(i=0;i < numbytes;i++)
-			{
-				printf("%x",payload[i]);
-			}
-	    	printf("\n\n\n\n\n");
-
-
-	    	for(i=0;i < CIPHER_SIZE;i++)
-			{
-				printf("%x",cipher_in[i]);
-			}
-
-	    	printf("\n\n\n\n\n");
 
 	    	printf("cipher_in: %s\n",cipher_in);
 	    	cipher_lenght=(numbytes-1);
 	    	pt_lenght=sizeof(pt_in);
 	    	decrypt_msg();
 	    	printf("NonceA decrypted as: %s\n", pt_in);
+
+
+	    	sscanf((char*)pt_in, "%lu",&nonceA );
+
+	    	nonceA=nonceA+1;
+	    	key_copy = random();
+	    	key_copy = random();//generating random number key
+	    	bzero(cipher_out, CIPHER_SIZE); 	// Fill buffer with zeros
+	    	bzero(pt_out, PLAINTEXT_SIZE); 		// Fill buffer with zeros
+	    	bzero(cipher_in, CIPHER_SIZE); 		// Fill buffer with zeros
+	    	bzero(pt_in, PLAINTEXT_SIZE); 		// Fill buffer with zeros
+	    	bzero(socketbuf, SOCKETBUFFERSIZE);	// Fill buffer with zeros
+	    	pt_lenght=sprintf((char*)pt_out, "%lu, %lu",nonceA, key_copy);	//generate string and encrypt
+	    	cipher_lenght=CIPHER_SIZE;
+	    	encrypt_msg();
+
+	    	printf("NonceA+1 and key encrypted, was: %s\n", pt_out);
+	    	printf("Sending message to client\n");
+	    	socketbuf[0]=NEW_SESSION_KEY;			//NEW_SESSION_KEY as start byte
+	    	printf("Message NEW_SESSION_KEY\n");
+	    	for(i=0;i < CIPHER_SIZE;i++)
+			{
+				socketbuf[i+1]=cipher_out[i];
+			}
+	    	printf("Message writing to client\n");
+	    	numbytes = write(client, socketbuf, cipher_lenght+1); // send buffer content through socket
+			if(numbytes < 0) { perror("Error in write()"); exit(1);}
+			printf("Message send: %s\n\n",socketbuf);
+			printf("Message length: %ld \n",numbytes);
+
+			memcpy((char*) key, key_copy);		//using key
+
+
 	    	close(client);
 }
-/*
-			nonceA = random();											//generating random number nonceA
-			sprintf((char*)pt_out, "%x,%lu",REQ_FOR_SESSION,nonceA);	//generate string and encrypt
-			encrypt_msg();
-			printf("NonceA encrypted\n");
-			printf("Sending message to server\n");
-			bzero(socketbuf, MAXDATASIZE);							// Fill buffer with zeros
-			strcpy(socketbuf, cipher_out);
-			//fgets(socketbuf, MAXDATASIZE, stdin);					// Read from stream
-			numbytes = recv(client, socketbuf, strlen(socketbuf)); // send buffer content through socket
-			if(numbytes < 0) { perror("Error in write()"); exit(1);}
 
-////Do rest here !!! 7A: receive message and decrypt wih Aprivate and store K.
-
-			decrypt_msg();
-			printf("pt_out = %s\n", pt_out);
-			printf("pt_in = %s\n", pt_in);
-
-			unsigned long generated_random_number2=0;
-
-			sscanf((char*)pt_in, "%lu",&generated_random_number2 );
-			//memcpy(generated_random_number2, &pt_out, 10);
-			if(nonceA==generated_random_number2){
-				printf("keys are correct !!!\n");
-			}
-			else{
-				printf("keys not correct !!!\n");
-			}
-*/
 			break;
 		default:
 			printf("Try again\n");

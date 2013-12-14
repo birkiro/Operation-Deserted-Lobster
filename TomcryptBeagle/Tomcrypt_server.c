@@ -4,7 +4,7 @@ int main(void) {
 	symmetric_CTR ctr;
 	int x, err;
 
-	/* register twofish first */
+	/* register aes_desc first */
 	if (register_cipher(&aes_desc) == -1) {
 		printf("Error registering cipher.\n");
 		return -1;
