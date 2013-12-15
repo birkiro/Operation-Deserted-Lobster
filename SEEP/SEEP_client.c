@@ -29,8 +29,9 @@ unsigned long pt_lenght = PLAINTEXT_SIZE;
 unsigned char cipher_in[CIPHER_SIZE], cipher_out[CIPHER_SIZE]; //for encrypted msg's both ways
 unsigned long cipher_lenght = CIPHER_SIZE;
 
+
 unsigned long nonceA, nonceA_server, key_copy;
-unsigned char key[16], IV[16];
+unsigned char key[16], IV[16], buffer[512];
 symmetric_CTR ctr;
 
 int SetupAESCrypt(void) {
@@ -305,14 +306,14 @@ int decrypt_msg() {
 
 int main(int argc, char *argv[]) {
 	int server;
-	long sockfd, numbytes;
+	long numbytes;
 	unsigned char socketbuf[SOCKETBUFFERSIZE];
-	int bytes;
 	char hostname[] = "127.0.0.1";
 	char portnum[] = "5000";
 	unsigned long i = 0;
 	unsigned char payload[1024];
 	unsigned char header = 0;
+
 
 	/* fill out IV */
 	strcpy((char*) IV, "0123456789012345"); //not that safe ;)
@@ -355,6 +356,7 @@ int main(int argc, char *argv[]) {
 			server = OpenClientSocket(hostname, atoi(portnum));
 			printf("Socket connection to server established\n");
 
+			/* Generate random number for testing key-pairs*/
 			nonceA = random(); //generating random number nonceA
 
 			bzero(cipher_out, CIPHER_SIZE); // Fill buffer with zeros
@@ -363,31 +365,25 @@ int main(int argc, char *argv[]) {
 			bzero(pt_in, PLAINTEXT_SIZE); // Fill buffer with zeros
 			bzero(socketbuf, SOCKETBUFFERSIZE); // Fill buffer with zeros
 
-			pt_lenght = sprintf((char*) pt_out, "%lu", nonceA); //generate string and encrypt
+			/* Generate string and encrypt using RSA */
+			pt_lenght = sprintf((char*) pt_out, "%lu", nonceA);
 
 			cipher_lenght = CIPHER_SIZE; //sizeof(cipher_out);
 			encrypt_msg();
 
-
-			printf("NonceA encrypted, was: %s\n", pt_out);
-			printf("Sending message to server\n");
-
-			//sprintf((char*)socketbuf, "%x,%s",REQ_FOR_SESSION,cipher_out);
 			bzero(socketbuf, SOCKETBUFFERSIZE); // Fill buffer with zeros
+			/* Add header */
 			socketbuf[0] = REQ_FOR_SESSION; //REQ_FOR_SESSION as start byte
 			for (i = 0; i < CIPHER_SIZE; i++) {
 				socketbuf[i + 1] = cipher_out[i];
 			}
-
-			//strcpy(socketbuf, cipher_out);
-			//fgets(socketbuf, MAXDATASIZE, stdin);					// Read from stream
+			/* Send message to server */
 			numbytes = write(server, socketbuf, cipher_lenght + 1); // send buffer content through socket
 			if (numbytes < 0) {
 				perror("Error in write()");
 				exit(1);
 			}
-			printf("Message send: %s\n\n", socketbuf);
-			printf("Message length: %ld \n", numbytes);
+
 
 			bzero(cipher_out, CIPHER_SIZE); // Fill buffer with zeros
 			bzero(pt_out, PLAINTEXT_SIZE); // Fill buffer with zeros
@@ -395,51 +391,75 @@ int main(int argc, char *argv[]) {
 			bzero(pt_in, PLAINTEXT_SIZE); // Fill buffer with zeros
 			bzero(socketbuf, SOCKETBUFFERSIZE); // Fill buffer with zeros
 
+			/* Receive message and strip data */
 			if ((numbytes = recv(server, socketbuf, SOCKETBUFFERSIZE, 0))
 					== -1) {
 				perror("Failed to receive");
 				exit(1);
 			}
 			buf[numbytes] = '\0'; // NULL
-			printf("Message received: %s\n\n", socketbuf);
-			printf("Message length: %ld\n", numbytes);
+
 
 			bzero(payload, SOCKETBUFFERSIZE); // Fill buffer with zeros
 			header = socketbuf[0];
-			printf("Message header:asdas \n");
 			for (i = 0; i < numbytes; i++) {
 				payload[i] = socketbuf[i + 1];
 			}
 			for (i = 0; i < CIPHER_SIZE; i++) {
 				cipher_in[i] = payload[i];
 			}
-			printf("Message header: %x\n", header);
+
+			/* Check header */
 			if (header == NEW_SESSION_KEY) {
 				printf("NEW_SESSION_KEY\n");
 			} else {
 				printf("Not NEW_SESSION_KEY %x\n", header);
+				break; 	//exit
 			}
 
 			cipher_lenght = (numbytes - 1);
 			pt_lenght = sizeof(pt_in);
+
+			/* Decrypt using RSA */
 			decrypt_msg();
-
-			printf("NonceA+1 and key decrypted as: %s\n", pt_in);
-
+			/* extract nonceA from server and AES key */
 			sscanf((char*) pt_in, "%lu, %lu", &nonceA_server, &key_copy);
 
-
-			printf("nonceA_server = %lu\n", nonceA_server);
-			printf("key_copy = %lu\n", key_copy);
-
+			/* Test is nonceA is correct, to see if server have correct key set */
 			if (nonceA + 1 == nonceA_server) {
 				printf("Server passed handshake test! nonceA==nonceA_server\n");
 			} else {
-				printf(
-						"Server didn't pass handshake test! nonceA!=nonceA_server!!!!\n");
+				printf("Server didn't pass handshake test! nonceA!=nonceA_server!!!!\n");
+				break;
 			}
 
-			memcpy((char*) key, key_copy); //using key
+			/* Copy AES key to variable */
+			sprintf((char*) key, "%lu", key_copy);	//using key
+
+			/* As server passed RSA handshake, its time to set up AES now */
+			SetupAESCrypt();
+
+			bzero(buffer, 512); // Fill buffer with zeros
+			bzero(socketbuf, SOCKETBUFFERSIZE); // Fill buffer with zeros
+
+			unsigned int buffer_length;
+			buffer_length = sprintf((char*)buffer, "%lu",(nonceA+1));	//generate string and encrypt
+			/* Encrypt using AES now, and send to server */
+			AESEncrypt();
+
+			socketbuf[0] = ACK_NEW_SESSION_KEY; //REQ_FOR_SESSION as start byte
+			for (i = 0; i < buffer_length; i++) {
+				socketbuf[i + 1] = buffer[i];
+			}
+			numbytes = write(server, socketbuf, buffer_length + 1); // send buffer content through socket
+			if (numbytes < 0) {
+				perror("Error in write()");
+				exit(1);
+			}
+
+			/* At this point the SEEP handshake and key sharing is over,
+			 * 	from now on communicating can continue with AES encryption */
+
 
 			break;
 		default:
